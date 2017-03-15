@@ -1,6 +1,6 @@
 package processor;
 
 public class Processor {
-    public void NaiveBayes(String[] tokens) {}
-    public void NegationHandling(String[] tokens) {}
+    public void naiveBayes(String[] tokens) {}
+    public void negationHandling(String[] tokens) {}
 }
