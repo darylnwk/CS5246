@@ -7,16 +7,27 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class Tokenizer {
+    /**
+     * This function uses OpenNLP SimpleTokenizer to tokenize the document
+     *
+     * SimpleTokenizer tokenize every word and punctuations into tokens
+     * Eg. This is a CS5246 project.
+     * ['This', 'is', 'a', 'CS5246', 'project', '.']
+     *
+     * @param fileName  - name of document
+     * @return          - tokenized document
+     */
     public String[] tokenize(String fileName) {
         SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
 
-        String contents = "";
+        String document = "";
         try {
-            contents = new String(Files.readAllBytes(Paths.get(fileName)));
+            // Extract contents in the document
+            document = new String(Files.readAllBytes(Paths.get(fileName)));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return tokenizer.tokenize(contents);
+        return tokenizer.tokenize(document);
     }
 }
