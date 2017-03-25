@@ -1,5 +1,6 @@
 package train;
 
+import condition_probability.ConditionProbability;
 import sentiment.Sentiment;
 import indexer.Indexer;
 import tokenizer.Tokenizer;
@@ -8,22 +9,6 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-
-class ConditionProbability {
-    private double[] probability;
-
-    public ConditionProbability(int size) {
-        probability = new double[size];
-    }
-
-    public void setProbability(Sentiment sentiment, double probability) {
-        this.probability[sentiment.ordinal()] = probability;
-    }
-
-    public double[] getProbability() {
-        return this.probability;
-    }
-}
 
 public class Train {
     private static final String NEWLINE = "\n";
@@ -83,10 +68,17 @@ public class Train {
                     continue;
                 }
 
+                if (term.matches("[0-9]]")) {
+                    continue;
+                }
+
                 int numOfDocsInClassContainingTerm = countDocsInClassContainingTerm(sentiment, term);
                 double probability = (double) (numOfDocsInClassContainingTerm + 1) / (numOfDocsInClass + 2);
                 if (condProb.containsKey(term)) {
-                    condProb.get(term).setProbability(sentiment, probability);
+                    ConditionProbability cp = condProb.get(term);
+                    cp.setProbability(sentiment, probability);
+
+                    condProb.put(term, cp);
                 } else {
                     ConditionProbability cp = new ConditionProbability(numOfDocumentClasses);
                     cp.setProbability(sentiment, probability);
@@ -125,6 +117,12 @@ public class Train {
 
     private void writeToFile(double[] prior) {
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(TRAIN_FILE),"utf-8"))) {
+            for (int i = 0; i < prior.length; i++) {
+                writer.write(Double.toString(prior[i]));
+                writer.write(WHITESPACE);
+            }
+            writer.write(NEWLINE);
+
             Iterator<String> vocabIterator = vocab.iterator();
             while (vocabIterator.hasNext()) {
                 String term = vocabIterator.next();
@@ -132,10 +130,6 @@ public class Train {
 
                 writer.write(term);
                 writer.write(WHITESPACE);
-                for (int i = 0; i < prior.length; i++) {
-                    writer.write(Double.toString(prior[i]));
-                    writer.write(WHITESPACE);
-                }
 
                 for (int i = 0; i < probability.length; i++) {
                     writer.write(Double.toString(probability[i]));
