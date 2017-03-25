@@ -68,12 +68,9 @@ public class Train {
                     continue;
                 }
 
-                if (term.matches("[0-9]]")) {
-                    continue;
-                }
-
                 int numOfDocsInClassContainingTerm = countDocsInClassContainingTerm(sentiment, term);
                 double probability = (double) (numOfDocsInClassContainingTerm + 1) / (numOfDocsInClass + 2);
+                probability = (probability > 1) ? 1 : probability;
                 if (condProb.containsKey(term)) {
                     ConditionProbability cp = condProb.get(term);
                     cp.setProbability(sentiment, probability);
