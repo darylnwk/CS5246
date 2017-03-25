@@ -26,18 +26,26 @@ public class Processor {
         loadData();
     }
 
-    public void start(String folderpath) {
-        File folder = new File(folderpath);
+    public void start(String folderPath) {
+        File folder = new File(folderPath);
         if (!folder.isDirectory()) {
             return;
         }
 
+        int count[] = new int[2];
+
         // Can add filter to filter out .txt files only
         File[] files = folder.listFiles();
         for (File file : files) {
-            naiveBayes(file.getPath());
+            if (naiveBayes(file.getPath())) {
+                count[1]++;
+            } else {
+                count[0]++;
+            }
         }
 
+        System.out.println("# of negative: " + count[0]);
+        System.out.println("# of positive: " + count[1]);
     }
 
     private void loadData() throws IOException {
@@ -84,7 +92,7 @@ public class Processor {
      * This function uses Bernoulli model
      * @param filePath
      */
-    public void naiveBayes(String filePath) {
+    public boolean naiveBayes(String filePath) {
         System.out.println("Analyzing " + filePath);
 
         double[] scores = new double[Sentiment.values().length];
@@ -93,11 +101,10 @@ public class Processor {
         // Add to HashSet for fast search
         HashSet<String> termsInDocSet = new HashSet<>();
         for (String termInDoc : termsInDoc) {
-            termsInDocSet.add(termInDoc);
+            termsInDocSet.add(termInDoc.toLowerCase());
         }
 
         for (Sentiment sentiment : Sentiment.values()) {
-            System.out.println(sentiment.name());
             scores[sentiment.ordinal()] = Math.log(prior[sentiment.ordinal()]);
 
             Iterator<String> vocabIterator = vocab.iterator();
@@ -107,7 +114,9 @@ public class Processor {
                 if (termsInDocSet.contains(term)) {
                     scores[sentiment.ordinal()] += Math.log(condProb.get(term).getProbability(sentiment));
                 } else {
-                    scores[sentiment.ordinal()] += Math.log(1 - condProb.get(term).getProbability(sentiment));
+                    if (condProb.get(term).getProbability(sentiment) != 1) {
+                        scores[sentiment.ordinal()] += Math.log(1 - condProb.get(term).getProbability(sentiment));
+                    }
                 }
             }
         }
@@ -117,8 +126,10 @@ public class Processor {
             max = Math.max(max, scores[i]);
         }
 
-        System.out.println("Sentiment values: " + scores[0] + ", " + scores[1]);
-        System.out.println("Max: " + max);
+//        System.out.println("Sentiment values: " + scores[0] + ", " + scores[1]);
+//        System.out.println();
+
+        return (scores[0] < scores[1]);
     }
 
     /**
