@@ -49,3 +49,4 @@ Temporary Items
 dataset/
 CS5246.iml
 *.class
+/sample/*
