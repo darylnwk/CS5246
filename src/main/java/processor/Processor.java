@@ -1,7 +1,6 @@
 package processor;
 
 import condition_probability.ConditionProbability;
-import opennlp.tools.cmdline.sentdetect.SentenceDetectorTool;
 import sentiment.Sentiment;
 import tokenizer.Tokenizer;
 import train.Train;
@@ -105,17 +104,19 @@ public class Processor {
         }
 
         for (Sentiment sentiment : Sentiment.values()) {
-            scores[sentiment.ordinal()] = Math.log(prior[sentiment.ordinal()]);
+            int index = sentiment.ordinal();
+            scores[index] = Math.log(prior[index]);
 
             Iterator<String> vocabIterator = vocab.iterator();
             while (vocabIterator.hasNext()) {
                 String term = vocabIterator.next();
+                double conditionalProbability = condProb.get(term).getProbability(sentiment);
 
                 if (termsInDocSet.contains(term)) {
-                    scores[sentiment.ordinal()] += Math.log(condProb.get(term).getProbability(sentiment));
+                    scores[index] += Math.log(conditionalProbability);
                 } else {
-                    if (condProb.get(term).getProbability(sentiment) != 1) {
-                        scores[sentiment.ordinal()] += Math.log(1 - condProb.get(term).getProbability(sentiment));
+                    if (conditionalProbability != 1) {
+                        scores[index] += Math.log(1 - conditionalProbability);
                     }
                 }
             }
