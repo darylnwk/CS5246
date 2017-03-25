@@ -14,16 +14,16 @@ public class Tokenizer {
      * Eg. This is a CS5246 project.
      * ['This', 'is', 'a', 'CS5246', 'project', '.']
      *
-     * @param fileName  - name of document
+     * @param filePath  - path to document
      * @return          - tokenized document
      */
-    public String[] tokenize(String fileName) {
+    public String[] tokenize(String filePath) {
         SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
 
         String document = "";
         try {
             // Extract contents in the document
-            document = new String(Files.readAllBytes(Paths.get(fileName)));
+            document = new String(Files.readAllBytes(Paths.get(filePath)));
         } catch (IOException e) {
             e.printStackTrace();
         }
