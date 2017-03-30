@@ -13,7 +13,7 @@ public class Trainer {
     private static final String NEWLINE = "\n";
     private static final String WHITESPACE = " ";
     private static final String TRAIN_FILE = "train.txt";
-    private static final String DATASET_DIRECTORY = "dataset/";
+    private static final String DATASET_DIRECTORY = "data/";
 
     private HashSet<String> vocab = new HashSet<>();
     private HashMap<String, ConditionProbability> condProb = new HashMap<>();
