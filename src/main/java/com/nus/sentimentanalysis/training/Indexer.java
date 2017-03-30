@@ -23,7 +23,7 @@ import java.io.IOException;
 public class Indexer {
     private static final String CONTENTS_FIELD = "contents";
     private static final String FILE_PATH_FIELD = "file_path";
-    private static final String DATASET_DIRECTORY = "dataset/";
+    private static final String DATASET_DIRECTORY = "data/";
 
     public void createIndex(Sentiment sentiment) {
         System.out.print("Creating index for " + sentiment.name() + " class >>>>> START");
@@ -46,7 +46,7 @@ public class Indexer {
                 }
 
                 Field contentField = new TextField(CONTENTS_FIELD, new FileReader(file));
-                // TODO(xzhang): why do we need to add file path?
+                // TODO(xzhang): why do we need to add file path? No particular reason. Just adding it like key-value.
                 Field filePathField = new TextField(FILE_PATH_FIELD, file.getCanonicalPath(), Field.Store.YES);
 
                 Document document = new Document();
