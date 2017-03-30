@@ -1,4 +1,4 @@
-package tokenizer;
+package com.nus.sentimentanalysis.shared;
 
 import opennlp.tools.tokenize.SimpleTokenizer;
 

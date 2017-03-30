@@ -1,9 +1,9 @@
-package processor;
+package com.nus.sentimentanalysis.processing;
 
-import condition_probability.ConditionProbability;
-import sentiment.Sentiment;
-import tokenizer.Tokenizer;
-import train.Train;
+import com.nus.sentimentanalysis.shared.Sentiment;
+import com.nus.sentimentanalysis.shared.ConditionProbability;
+import com.nus.sentimentanalysis.shared.Tokenizer;
+import com.nus.sentimentanalysis.training.Trainer;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,8 +52,8 @@ public class Processor {
         if (!file.exists()) {
             System.out.println("Training file not found!");
             System.out.println("Starting training...");
-            Train train = new Train();
-            train.start();
+            Trainer trainer = new Trainer();
+            trainer.start();
         }
 
         System.out.print("Loading data... ");

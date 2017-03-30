@@ -1,16 +1,15 @@
-package train;
+package com.nus.sentimentanalysis.training;
 
-import condition_probability.ConditionProbability;
-import sentiment.Sentiment;
-import indexer.Indexer;
-import tokenizer.Tokenizer;
+import com.nus.sentimentanalysis.shared.ConditionProbability;
+import com.nus.sentimentanalysis.shared.Sentiment;
+import com.nus.sentimentanalysis.shared.Tokenizer;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class Train {
+public class Trainer {
     private static final String NEWLINE = "\n";
     private static final String WHITESPACE = " ";
     private static final String TRAIN_FILE = "train.txt";
@@ -22,7 +21,7 @@ public class Train {
     private Tokenizer tokenizer;
     private Indexer indexer;
 
-    public Train() {
+    public Trainer() {
         this.tokenizer = new Tokenizer();
         this.indexer = new Indexer();
     }
@@ -58,11 +57,7 @@ public class Train {
 
             prior[sentiment.ordinal()] = (double) numOfDocsInClasses[sentiment.ordinal()] / totalNumOfFiles;
 
-            Iterator<String> vocabIterator = vocab.iterator();
-
-            while (vocabIterator.hasNext()) {
-                String term = vocabIterator.next();
-
+            for (String term : vocab) {
                 // Skip non-words
                 if (!term.matches("\\w+") || term.equals("_")) {
                     continue;
