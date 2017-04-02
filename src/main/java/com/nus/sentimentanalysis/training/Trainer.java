@@ -89,14 +89,13 @@ public class Trainer {
             File[] files = folder.listFiles();
             if (files != null) {
                 // #4: for each class, count doc in class
-                System.out.println("Total docs for " + sentiment.name() + " is: " + files.length);
-                docCountInClass[sentiment.ordinal()] = files.length - 1;
-                totalDoc += (files.length - 1);
+                int count = 0;
                 for (File file : files) {
                     if (file.isDirectory()) {
                         continue;
                     }
-
+                    count++;
+                    totalDoc++;
                     String[] tokens = tokenizer.tokenize(file.getPath());
                     for (String token : tokens) {
                         // Skip non-words
@@ -106,6 +105,8 @@ public class Trainer {
                         vocab.add(token);
                     }
                 }
+                docCountInClass[sentiment.ordinal()] = count;
+                System.out.println("Total docs for " + sentiment.name() + " is: " + count);
             }
         }
     }
