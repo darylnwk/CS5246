@@ -51,3 +51,6 @@ CS5246.iml
 sentiment-analysis.iml
 data/positive/index/
 data/negative/index/
+output
+data/negative/processed
+data/positive/processed

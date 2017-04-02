@@ -1,6 +1,6 @@
 package com.nus.sentimentanalysis.shared;
 
-import opennlp.tools.tokenize.SimpleTokenizer;
+import opennlp.tools.tokenize.WhitespaceTokenizer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ public class Tokenizer {
      * @return          - tokenized document
      */
     public String[] tokenize(String filePath) {
-        SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
+        WhitespaceTokenizer tokenizer = WhitespaceTokenizer.INSTANCE;
 
         String document = "";
         try {

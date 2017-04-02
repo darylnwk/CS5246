@@ -23,4 +23,8 @@ public class ConditionProbability {
     public double getProbability(Sentiment sentiment) {
         return this.probability[sentiment.ordinal()];
     }
+
+    public double getProbability(int sentiment) {
+        return this.probability[sentiment];
+    }
 }

@@ -13,12 +13,7 @@ public class SentimentAnalysis {
     private static final String RUN = "run";
 
     public static void main(String[] args) throws IOException {
-        if (args.length == 1 && args[0].equals(INDEX)) {
-            Indexer indexer = new Indexer();
-            for (Sentiment sentiment : Sentiment.values()) {
-                indexer.createIndex(sentiment);
-            }
-        } else if (args.length == 1 && args[0].equals(TRAIN)) {
+        if (args.length == 1 && args[0].equals(TRAIN)) {
             Trainer trainer = new Trainer();
             trainer.start();
         } else if (args.length == 2 && args[0].equals(RUN)) {

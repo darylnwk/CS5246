@@ -3,18 +3,24 @@ package com.nus.sentimentanalysis.training;
 import com.nus.sentimentanalysis.shared.ConditionProbability;
 import com.nus.sentimentanalysis.shared.Sentiment;
 import com.nus.sentimentanalysis.shared.Tokenizer;
+import com.nus.sentimentanalysis.shared.Utils;
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.store.SimpleFSDirectory;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+
+import static com.nus.sentimentanalysis.shared.Utils.DATASET_DIRECTORY;
+import static com.nus.sentimentanalysis.shared.Utils.INDEX_DIR;
+import static com.nus.sentimentanalysis.shared.Utils.getSentimentBaseDir;
 
 public class Trainer {
+    public static final String TRAIN_FILE = "output/train.txt";
+
     private static final String NEWLINE = "\n";
     private static final String WHITESPACE = " ";
-    private static final String TRAIN_FILE = "train.txt";
-    private static final String DATASET_DIRECTORY = "data/";
-    private static final String TERM_PATTERN = "\\w+";
+
 
     private int totalDoc = 0; // count total document
     private HashSet<String> vocab = new HashSet<>(); // extract vocabulary
@@ -30,17 +36,18 @@ public class Trainer {
     }
 
     public void start() throws IOException {
-        int totalClass = Sentiment.values().length;
+        System.out.println("Start training...");
+
         // #1: ExtractVocabulary(D)
         extractVocabulary();
 
-        // for debugging
-        // System.out.println("Total # of files: " + totalNumOfFiles);
-        // System.out.println("Total # of words: " + vocab.size());
-
+        int totalClass = Sentiment.values().length;
         double[] prior = new double[totalClass];
+
         for (Sentiment sentiment : Sentiment.values()) {
             System.out.println("Training " + sentiment.name() + ">>>>> START");
+
+            createDocIndex(sentiment);
 
             int classId = sentiment.ordinal();
 
@@ -54,7 +61,7 @@ public class Trainer {
 
                 double probability = (double) (docClassTermCount + 1) / (docClassCount + 2);
                 if (probability > 1) {
-                    System.out.println("Term: " + term + " | N(ct) = " + docClassTermCount + " N(c) = " + docClassCount);
+                    System.err.println("Term: " + term + " | N(ct) = " + docClassTermCount + " N(c) = " + docClassCount);
                     probability = 1;
                 }
                 if (condProb.containsKey(term)) {
@@ -69,6 +76,7 @@ public class Trainer {
             }
 
             System.out.println("Training " + sentiment.name() + ">>>>> DONE");
+            System.out.println();
         }
 
         writeToFile(prior);
@@ -78,12 +86,9 @@ public class Trainer {
         docCountInClass = new int[Sentiment.values().length];
 
         for (Sentiment sentiment : Sentiment.values()) {
-            String basePath = DATASET_DIRECTORY + sentiment.name().toLowerCase();
-            File indexFolder = new File(basePath + "/index");
-            if (!indexFolder.exists()) {
-                System.out.println("Index folder for " + sentiment.name() + " class not found!");
-                indexer.createIndex(sentiment);
-            }
+            clearTrainingData(sentiment);
+
+            String basePath = Utils.getSentimentBaseDir(sentiment);
 
             File folder = new File(basePath);
             File[] files = folder.listFiles();
@@ -92,18 +97,34 @@ public class Trainer {
                 int count = 0;
                 for (File file : files) {
                     if (file.isDirectory()) {
+                        System.out.println("skip folder " + file.getName());
                         continue;
                     }
+                    boolean negated = false;
+                    StringBuilder sb = new StringBuilder();
                     count++;
                     totalDoc++;
                     String[] tokens = tokenizer.tokenize(file.getPath());
                     for (String token : tokens) {
-                        // Skip non-words
-                        if (!token.matches(TERM_PATTERN) || token.equals("_")) {
-                            continue;
+                        if (Utils.isPunctuation(token)) {
+                            negated = false; // reset when punctuation is encountered
                         }
-                        vocab.add(token);
+                        else if (Utils.isNegationCue(token)) {
+                            negated = true; // mark negated and append to next word
+                        }
+                        else if (negated) {
+                            token = Utils.negate(token);
+                            vocab.add(token);
+                        }
+                        else {
+                            vocab.add(token);
+                        }
+                        sb.append(token);
+                        sb.append(" ");
                     }
+
+                    generateTrainingData(sb.toString(), file.getName(), sentiment);
+
                 }
                 docCountInClass[sentiment.ordinal()] = count;
                 System.out.println("Total docs for " + sentiment.name() + " is: " + count);
@@ -111,28 +132,57 @@ public class Trainer {
         }
     }
 
+    private void clearTrainingData(Sentiment sentiment) {
+        try {
+            File processedDir = new File(Utils.getSentimentBaseDir(sentiment) + Utils.PROCESSED_DIR);
+            if (processedDir.exists()) {
+                FileUtils.deleteDirectory(processedDir);
+            }
+            processedDir.mkdir();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void generateTrainingData(String data, String filename, Sentiment sentiment) {
+        try {
+            // add processed file (with negation handling)
+            String path = Utils.getSentimentBaseDir(sentiment);
+            File newFile = new File(path + Utils.PROCESSED_DIR + filename);
+            if (newFile.createNewFile()) {
+                FileWriter fw = new FileWriter(newFile);
+                fw.append(data);
+                fw.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createDocIndex(Sentiment sentiment) {
+        indexer.createIndex(getSentimentBaseDir(sentiment));
+    }
+
     private int countDocsInClassContainingTerm(Sentiment sentiment, String term) throws IOException {
-           return indexer.query(sentiment, term);
+        return indexer.query(getSentimentBaseDir(sentiment) + INDEX_DIR, term);
     }
 
     private void writeToFile(double[] prior) {
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(TRAIN_FILE),"utf-8"))) {
-            for (int i = 0; i < prior.length; i++) {
-                writer.write(Double.toString(prior[i]));
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(TRAIN_FILE), "utf-8"))) {
+            for (double aPrior : prior) {
+                writer.write(Double.toString(aPrior));
                 writer.write(WHITESPACE);
             }
             writer.write(NEWLINE);
 
-            Iterator<String> vocabIterator = vocab.iterator();
-            while (vocabIterator.hasNext()) {
-                String term = vocabIterator.next();
+            for (String term : vocab) {
                 double[] probability = condProb.get(term).getProbability();
 
                 writer.write(term);
                 writer.write(WHITESPACE);
 
-                for (int i = 0; i < probability.length; i++) {
-                    writer.write(Double.toString(probability[i]));
+                for (double aProbability : probability) {
+                    writer.write(Double.toString(aProbability));
                     writer.write(WHITESPACE);
                 }
 
