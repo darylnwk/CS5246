@@ -26,7 +26,7 @@ public class Indexer {
     private static final String DATASET_DIRECTORY = "data/";
 
     public void createIndex(Sentiment sentiment) {
-        System.out.print("Creating index for " + sentiment.name() + " class >>>>> START");
+        System.out.println("Creating index for " + sentiment.name() + " class >>>>> START");
 
         File dir = new File(DATASET_DIRECTORY + sentiment.name());
         File[] files = dir.listFiles();
@@ -46,7 +46,6 @@ public class Indexer {
                 }
 
                 Field contentField = new TextField(CONTENTS_FIELD, new FileReader(file));
-                // TODO(xzhang): why do we need to add file path? No particular reason. Just adding it like key-value.
                 Field filePathField = new TextField(FILE_PATH_FIELD, file.getCanonicalPath(), Field.Store.YES);
 
                 Document document = new Document();
@@ -62,17 +61,14 @@ public class Indexer {
             e.printStackTrace();
         }
 
-        System.out.print("Creating index for " + sentiment.name() + " class >>>>> DONE");
+        System.out.println("Creating index for " + sentiment.name() + " class >>>>> DONE");
     }
 
     public int query(Sentiment sentiment, String term) throws IOException {
-        Directory indexDirectory = FSDirectory.open(
-                new File(DATASET_DIRECTORY + sentiment.name() + "/index").toPath());
+        Directory indexDirectory = FSDirectory.open(new File(DATASET_DIRECTORY + sentiment.name() + "/index").toPath());
         IndexReader indexReader = DirectoryReader.open(indexDirectory);
         IndexSearcher indexSearcher = new IndexSearcher(indexReader);
-
         Query query = new TermQuery(new Term(CONTENTS_FIELD, term));
-
         return indexSearcher.count(query);
     }
 }

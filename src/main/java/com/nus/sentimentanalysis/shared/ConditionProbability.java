@@ -1,6 +1,7 @@
 package com.nus.sentimentanalysis.shared;
 
 public class ConditionProbability {
+    // each ConditionProbability covers both Positive and Negative
     private double[] probability;
 
     public ConditionProbability(int size) {

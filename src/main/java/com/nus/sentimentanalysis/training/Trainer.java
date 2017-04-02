@@ -14,8 +14,11 @@ public class Trainer {
     private static final String WHITESPACE = " ";
     private static final String TRAIN_FILE = "train.txt";
     private static final String DATASET_DIRECTORY = "data/";
+    private static final String TERM_PATTERN = "\\w+";
 
-    private HashSet<String> vocab = new HashSet<>();
+    private int totalDoc = 0; // count total document
+    private HashSet<String> vocab = new HashSet<>(); // extract vocabulary
+    private int[] docCountInClass; // count docs in class
     private HashMap<String, ConditionProbability> condProb = new HashMap<>();
 
     private Tokenizer tokenizer;
@@ -27,78 +30,82 @@ public class Trainer {
     }
 
     public void start() throws IOException {
-        int numOfDocumentClasses = Sentiment.values().length;
-
-        int totalNumOfFiles = 0;
-        int[] numOfDocsInClasses = new int[numOfDocumentClasses];
-        for (Sentiment sentiment : Sentiment.values()) {
-            File file = new File(DATASET_DIRECTORY + sentiment.name().toLowerCase() + "/index");
-            if (!file.exists()) {
-                System.out.println("Index folder for " + sentiment.name() + " class not found!");
-                indexer.createIndex(sentiment);
-            }
-
-            File folder = new File(DATASET_DIRECTORY + sentiment.name().toLowerCase());
-            numOfDocsInClasses[sentiment.ordinal()] = folder.listFiles().length;
-            totalNumOfFiles += folder.listFiles().length;
-
-            extractVocabulary(folder.listFiles());
-        }
+        int totalClass = Sentiment.values().length;
+        // #1: ExtractVocabulary(D)
+        extractVocabulary();
 
         // for debugging
         // System.out.println("Total # of files: " + totalNumOfFiles);
         // System.out.println("Total # of words: " + vocab.size());
 
-        double[] prior = new double[numOfDocumentClasses];
+        double[] prior = new double[totalClass];
         for (Sentiment sentiment : Sentiment.values()) {
-            System.out.print("Training " + sentiment.name() + " class... ");
+            System.out.println("Training " + sentiment.name() + ">>>>> START");
 
-            int numOfDocsInClass = numOfDocsInClasses[sentiment.ordinal()];
+            int classId = sentiment.ordinal();
 
-            prior[sentiment.ordinal()] = (double) numOfDocsInClasses[sentiment.ordinal()] / totalNumOfFiles;
+            int docClassCount = docCountInClass[classId];
+            prior[classId] = (double) docClassCount / totalDoc;
 
+            // #6: for each t -> V
             for (String term : vocab) {
-                // Skip non-words
-                if (!term.matches("\\w+") || term.equals("_")) {
-                    continue;
-                }
+                // #7: N(ct) = countDocsInClassContainingTerm
+                int docClassTermCount = countDocsInClassContainingTerm(sentiment, term);
 
-                int numOfDocsInClassContainingTerm = countDocsInClassContainingTerm(sentiment, term);
-                double probability = (double) (numOfDocsInClassContainingTerm + 1) / (numOfDocsInClass + 2);
-                probability = (probability > 1) ? 1 : probability;
+                double probability = (double) (docClassTermCount + 1) / (docClassCount + 2);
+                if (probability > 1) {
+                    System.out.println("Term: " + term + " | N(ct) = " + docClassTermCount + " N(c) = " + docClassCount);
+                    probability = 1;
+                }
                 if (condProb.containsKey(term)) {
                     ConditionProbability cp = condProb.get(term);
                     cp.setProbability(sentiment, probability);
 
-                    condProb.put(term, cp);
                 } else {
-                    ConditionProbability cp = new ConditionProbability(numOfDocumentClasses);
+                    ConditionProbability cp = new ConditionProbability(totalClass);
                     cp.setProbability(sentiment, probability);
-
                     condProb.put(term, cp);
                 }
             }
 
-            System.out.println("Done");
-            System.out.println();
+            System.out.println("Training " + sentiment.name() + ">>>>> DONE");
         }
 
         writeToFile(prior);
     }
 
-    private void extractVocabulary(File[] listOfFiles) {
-        for (File file : listOfFiles) {
-            if (file.isDirectory()) { continue; }
+    private void extractVocabulary() {
+        docCountInClass = new int[Sentiment.values().length];
 
-            String[] tokens = tokenizer.tokenize(file.getPath());
+        for (Sentiment sentiment : Sentiment.values()) {
+            String basePath = DATASET_DIRECTORY + sentiment.name().toLowerCase();
+            File indexFolder = new File(basePath + "/index");
+            if (!indexFolder.exists()) {
+                System.out.println("Index folder for " + sentiment.name() + " class not found!");
+                indexer.createIndex(sentiment);
+            }
 
-            for (String token : tokens) {
-                // Skip non-words
-                if (!token.matches("\\w+") || token.equals("_")) {
-                    continue;
+            File folder = new File(basePath);
+            File[] files = folder.listFiles();
+            if (files != null) {
+                // #4: for each class, count doc in class
+                System.out.println("Total docs for " + sentiment.name() + " is: " + files.length);
+                docCountInClass[sentiment.ordinal()] = files.length - 1;
+                totalDoc += (files.length - 1);
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        continue;
+                    }
+
+                    String[] tokens = tokenizer.tokenize(file.getPath());
+                    for (String token : tokens) {
+                        // Skip non-words
+                        if (!token.matches(TERM_PATTERN) || token.equals("_")) {
+                            continue;
+                        }
+                        vocab.add(token);
+                    }
                 }
-
-                vocab.add(token);
             }
         }
     }
