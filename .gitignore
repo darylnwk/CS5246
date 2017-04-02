@@ -23,7 +23,6 @@ $RECYCLE.BIN/
 
 # OSX
 # =========================
-
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -50,3 +49,5 @@ dataset/
 CS5246.iml
 *.class
 sentiment-analysis.iml
+data/positive/index/
+data/negative/index/
